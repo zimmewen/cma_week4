@@ -1,0 +1,206 @@
+---
+title: "week4_exercise"
+author: "Wenke Zimmermann"
+date: "2022-05-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#Load neccessary libraries
+```{r, message=FALSE, warning=FALSE}
+library(readr)        
+library(dplyr)        
+library(ggplot2)      
+library(lubridate)
+library(plotly)
+```
+
+
+
+##Preparation
+#Testing some functions
+```{r}
+testfun <- function(){}  #schreibe leere Funktion mit Namen 'testfun'
+
+testfun()  #Aufruf ergibt Null weil noch keine wirkliche Aufgabe zugewiesen
+
+class(testfun)
+
+
+#To make the function actually do something, we need to specify what's within the curly brackets {}.
+
+testfun <- function(){print("this function does nothing")}
+
+testfun()  # Ergibt "this function does nothing"
+
+#We want the function to accept some input values, we have to define them within the round brackets.
+
+testfun <- function(sometext){print(sometext)}
+
+testfun(sometext = "this function does slightly more, but still not much")
+#Ergibt "this function does slightly more, but still not much"
+
+
+#Say we want a function that calculates our age if provided with the date of our birthday. We can use Sys.time() to provide today’s date and difftime() to calculate the time difference between today and our birthday.
+my_age <- function(birthday, units){
+  difftime(Sys.time(),birthday, units = units)
+}
+
+my_age(birthday = "1997-04-23", units = "days")
+#Time difference of 9142.53 days
+
+#As we already know from using other functions, if we declare our variables in the order that we initially listed them, we do not need to specify the parameters (no need of birthday = and units =).
+
+my_age("1997-04-23", "days")
+## Time difference of 9142.53 days
+
+#If we want any of our parameters to have default value, we can assign an initial value to the parameter when declaring the variables within the round brackets.
+my_age <- function(birthday, units = "days"){
+  difftime(Sys.time(),birthday, units = units)
+}
+
+# if not stated otherwise, our function uses the unit "days"
+my_age("1997-04-23")
+## Time difference of 9142.53 days
+
+# We can still overwrite units
+my_age("1997-04-23", "hours")
+## Time difference of 219420.7 hours
+
+#All you need to do now is run execute the function deceleration (myage <- function... etc.) at the beginning of your script, and you can use the function for your entire R session. Tip: Always try to make your function self sufficient: Don’t call variables that were created outside the function call.
+
+```
+
+
+
+##Task 1: Write own function
+#Create a function for our Euclidean distance calculation.
+Note: if you treat your input variables as vectors, they will work in dplyr's mutate() and summarise() operations.
+```{r}
+eucl_dist <- function(point1, point2) {
+  sqrt((point1[1]-point2[1])^2+(point1[2]-point2[2])^2)
+}
+
+```
+
+
+
+## Look for 'meet'-patterns in wildboar data ###
+
+##Task 2: Prepare Analysis
+```{r}
+#Load data
+wildschwein <- read_delim("wildschwein_BE_2056.csv")
+
+
+#To simplify use subset, filter on Rosa and Sabi and for timespan 01.-15.04.2015
+wildschwein_filter <- wildschwein %>%
+  filter(TierName == "Rosa" | TierName == "Sabi") %>%
+  filter(DatetimeUTC >= as.POSIXct("2015-04-01", tz = "UTC") & DatetimeUTC <= as.POSIXct("2015-04-15", tz = "UTC"))
+
+
+#alternativ subset(DatetimeUTC > "2015-04-02" & DatetimeUTC < "2015-04-16"), aber ist um einen Tag verschoben, wenn man 01.04. beginnt, nimmt er noch 31.03. mit und man nur bis 15.04. geht kommt dieser nicht mit --> warum!?
+
+```
+
+
+##Task 3: Create Join Key
+#samples are taken every full hour, quarter past, half past and quarter to
+#to compare we need locations of each animal and match them temporally
+```{r}
+#as timestamps are slightly off, and we need them to be identical as join key, we round minutes to a multiple of 15(00, 15, 30, 45)
+wildschwein_filter <- wildschwein_filter %>%
+  mutate(DatetimeRound = round_date(DatetimeUTC, unit = "15 minutes"))
+
+```
+
+
+##Task 4: Measuring distance at concurrent locations
+```{r}
+#1) Split the wildschwein_filter object into one dataframe per animal
+rosa <- wildschwein_filter %>%
+  filter(TierName == "Rosa")
+
+sabi <- wildschwein_filter %>%
+  filter(TierName == "Sabi")
+
+
+#2) Join these datasets by the new Datetime column, joined observations are temporally close.
+#Tip: specify suffix to prevent column names ending in .x or .y.
+
+rosa_sabi_join <- rosa %>%
+  inner_join(sabi, by = "DatetimeRound", suffix = c(".rosa", ".sabi"))
+
+
+#3) Calculate Euclidean distances between concurrent observations and store values in a new column
+#distance = sqrt((E1 - E2)^2 + (N1 - N2)^2)
+#E1,N1 refers to current location; E2,N2 refers to consecutive location
+#Use "lead(E,1)" to address E2
+
+rosa_sabi_join <- rosa_sabi_join %>%
+  rowwise() %>%
+  mutate(
+    distance = eucl_dist(c(E.rosa, N.rosa), c(E.sabi, N.sabi))
+  )       
+
+
+#4) Use reasonable threshold on distance to determine if the animals are also spatially close enough to constitute a meet (use 100 meters).
+#Store this Boolean information (TRUE/FALSE) in new column
+
+rosa_sabi_join <- rosa_sabi_join %>%
+  mutate(
+    meet = distance < mean(100, na.rm = TRUE))
+
+
+#alternativ
+#rosa_sabi_join <- rosa_sabi_join %>%
+#  mutate(
+#    meet = ifelse(distance < 100, TRUE, FALSE))
+
+```
+
+
+##Task 5: Visualize the 'meets' of Rosa and Sabi
+
+#Used the individual dataframes from rosa and sabi (from the previous task)
+#Used the joined dataset (also from the previous task), filtered to only the meets
+#Manually changed the x and y axis limits
+```{r}
+
+#unvollständig
+
+ggplot()+
+  geom_point(rosa, mapping = aes(E, N, color = "Rosa", alpha = 0.5)) +
+  geom_point(sabi, mapping = aes(E, N, color = "Sabi", alpha = 0.5)) +
+  geom_point(rosa_sabi_join %>% filter (meet == TRUE),
+             mapping = aes(E.rosa, N.rosa, fill = "Rosa", color = "black")) +
+  geom_point(rosa_sabi_join %>% filter (meet == TRUE),
+             mapping = aes(E.sabi, N.sabi, fill = "Sabi", color = "black")) +
+  ylim(c(1204500, 1205500)) +
+  xlim(c(2570000, 2571000)) +
+  labs(color = "Regular Location")
+
+```
+
+
+##Task 6: Visualize data as Hägerstraand timecube
+```{r}
+
+#unvollständig
+
+fig_rosa <- plot_ly(rosa_sabi_join, x = ~E.rosa, y = ~N.rosa, z = ~DatetimeRound, type = 'scatter3d', mode = 'lines',
+        line = list(color = '#1f77b4', width = 1))
+
+fig_rosa_sabi <- fig_rosa %>% add_trace(x = ~E.sabi, y = ~N.sabi, z = ~DatetimeRound,
+            line = list(color = 'rgb(44, 160, 44)', width = 1))
+
+fig_rosa_sabi
+
+```
+
+
+
