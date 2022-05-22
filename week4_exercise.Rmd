@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 #Load neccessary libraries
-```{r, message=FALSE, warning=FALSE}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 library(readr)        
 library(dplyr)        
 library(ggplot2)      
@@ -23,7 +23,7 @@ library(plotly)
 
 ##Preparation
 #Testing some functions
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 testfun <- function(){}  #schreibe leere Funktion mit Namen 'testfun'
 
 testfun()  #Aufruf ergibt Null weil noch keine wirkliche Aufgabe zugewiesen
@@ -80,7 +80,7 @@ my_age("1997-04-23", "hours")
 ##Task 1: Write own function
 #Create a function for our Euclidean distance calculation.
 Note: if you treat your input variables as vectors, they will work in dplyr's mutate() and summarise() operations.
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 eucl_dist <- function(point1, point2) {
   sqrt((point1[1]-point2[1])^2+(point1[2]-point2[2])^2)
 }
@@ -92,7 +92,7 @@ eucl_dist <- function(point1, point2) {
 ## Look for 'meet'-patterns in wildboar data ###
 
 ##Task 2: Prepare Analysis
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 #Load data
 wildschwein <- read_delim("wildschwein_BE_2056.csv")
 
@@ -111,7 +111,7 @@ wildschwein_filter <- wildschwein %>%
 ##Task 3: Create Join Key
 #samples are taken every full hour, quarter past, half past and quarter to
 #to compare we need locations of each animal and match them temporally
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 #as timestamps are slightly off, and we need them to be identical as join key, we round minutes to a multiple of 15(00, 15, 30, 45)
 wildschwein_filter <- wildschwein_filter %>%
   mutate(DatetimeRound = round_date(DatetimeUTC, unit = "15 minutes"))
@@ -120,7 +120,7 @@ wildschwein_filter <- wildschwein_filter %>%
 
 
 ##Task 4: Measuring distance at concurrent locations
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 #1) Split the wildschwein_filter object into one dataframe per animal
 rosa <- wildschwein_filter %>%
   filter(TierName == "Rosa")
@@ -169,7 +169,7 @@ rosa_sabi_join <- rosa_sabi_join %>%
 #Used the individual dataframes from rosa and sabi (from the previous task)
 #Used the joined dataset (also from the previous task), filtered to only the meets
 #Manually changed the x and y axis limits
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 
 #unvollständig
 
@@ -188,7 +188,7 @@ ggplot()+
 
 
 ##Task 6: Visualize data as Hägerstraand timecube
-```{r}
+```{r, message=FALSE, warning=FALSE, message=FALSE}
 
 #unvollständig
 
