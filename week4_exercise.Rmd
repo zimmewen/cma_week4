@@ -5,10 +5,6 @@ date: "2022-05-14"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 
 #Load neccessary libraries
 ```{r, message=FALSE, warning=FALSE, message=FALSE}
@@ -171,18 +167,16 @@ rosa_sabi_join <- rosa_sabi_join %>%
 #Manually changed the x and y axis limits
 ```{r, message=FALSE, warning=FALSE, message=FALSE}
 
-#unvollständig
+rosa_sabi_meet <- rosa_sabi_join %>%
+  filter(meet)
 
-ggplot()+
-  geom_point(rosa, mapping = aes(E, N, color = "Rosa", alpha = 0.5)) +
-  geom_point(sabi, mapping = aes(E, N, color = "Sabi", alpha = 0.5)) +
-  geom_point(rosa_sabi_join %>% filter (meet == TRUE),
-             mapping = aes(E.rosa, N.rosa, fill = "Rosa", color = "black")) +
-  geom_point(rosa_sabi_join %>% filter (meet == TRUE),
-             mapping = aes(E.sabi, N.sabi, fill = "Sabi", color = "black")) +
-  ylim(c(1204500, 1205500)) +
-  xlim(c(2570000, 2571000)) +
-  labs(color = "Regular Location")
+ggplot(rosa_sabi_meet) +
+  geom_point(data = sabi, aes(E, N, colour = "sabi"),shape = 16, alpha = 0.3) +
+  geom_point(data = rosa, aes(E, N, colour = "rosa"),shape = 16, alpha = 0.3) +
+  geom_point(aes(E.sabi,N.sabi, fill = "sabi"),shape = 21) +
+  geom_point(aes(E.rosa, N.rosa, fill = "rosa"), shape = 21) +
+  labs(color = "Regular Locations", fill = "Meets") +
+  coord_equal(xlim = c(2570000,2571000), y = c(1204500,1205500))
 
 ```
 
@@ -199,6 +193,36 @@ fig_rosa_sabi <- fig_rosa %>% add_trace(x = ~E.sabi, y = ~N.sabi, z = ~DatetimeR
             line = list(color = 'rgb(44, 160, 44)', width = 1))
 
 fig_rosa_sabi
+
+
+
+
+#Alternativ von Nils
+
+meanmeetpoints <- rosa_sabi_join %>%
+  filter(meet) %>%
+  mutate(
+    E.mean = (E.rosa+E.sabi)/2,
+    N.mean = (N.rosa+N.sabi)/2
+  )
+
+plot_ly(rosa_sabi_join, x = ~E.rosa,y = ~N.rosa, z = ~DatetimeRound,type = "scatter3d", mode = "lines") %>%
+  add_trace(rosa_sabi_join, x = ~E.sabi,y = ~N.sabi, z = ~DatetimeRound) %>%
+  add_markers(data = meanmeetpoints, x = ~E.mean,y = ~N.mean, z = ~DatetimeRound) %>%
+  layout(scene = list(xaxis = list(title = 'E'),
+                      yaxis = list(title = 'N'),
+                      zaxis = list(title = 'Time')))
+
+
+rosa_sabi_join %>%
+  filter(DatetimeRound<"2015-04-04") %>%
+  plot_ly(x = ~E.rosa,y = ~N.rosa, z = ~DatetimeRound,type = "scatter3d", mode = "lines") %>%
+  add_trace(rosa_sabi_join, x = ~E.sabi,y = ~N.sabi, z = ~DatetimeRound) %>%
+  add_markers(data = meanmeetpoints, x = ~E.mean,y = ~N.mean, z = ~DatetimeRound) %>%
+  layout(scene = list(xaxis = list(title = 'E'),
+                      yaxis = list(title = 'N'),
+                      zaxis = list(title = 'Time')))
+
 
 ```
 
